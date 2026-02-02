@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 615501dbe4f3fe94fbf4b564abb10237, type: 3}
+  m_Name: ModConfig
+  m_EditorClassIdentifier: 
+  id: voidTraversal
+  title: Void Traversal
+  author: MaddyMoos
+  description: 'Traverse inside The Void, because your defuser made a poor bet, and
+    now Void wants to see them get extremely confused.
+
+
+    I think Void was a little upset her *own module* barely used her "Special Gimmick."
+
+
+    Module ID: voidTraversal
+
+
+    Manual on: ktane.timwi.de/HTML/Void%20Traversal.html'
+  version: 1
+  outputFolder: C:\Program Files (x86)\Steam\steamapps\common\Keep Talking and Nobody
+    Explodes\mods
+  debugBuild: 1
+  previewImage: {fileID: 2800000, guid: 7443a3506f3b30d4cbc923f9fd97e557, type: 3}

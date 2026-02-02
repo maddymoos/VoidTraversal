@@ -1,0 +1,14 @@
+/* Manual font */
+@font-face {
+  font-family: 'Special Elite';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Special Elite'), local('SpecialElite-Regular'), url(../font/SpecialElite.ttf);
+}
+/* Numbers in Void Traversal */
+@font-face {
+  font-family: 'VoidTrav';
+  font-style: normal;
+  font-weight: 800;
+  src: local('void2'), url(../font/SpecialElite.ttf);
+}
