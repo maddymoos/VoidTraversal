@@ -1643,7 +1643,7 @@ Light:
   m_Type: 2
   m_Color: {r: 0.44827604, g: 0, b: 1, a: 1}
   m_Intensity: 0
-  m_Range: 10
+  m_Range: 5
   m_SpotAngle: 30
   m_CookieSize: 10
   m_Shadows:
@@ -2191,7 +2191,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShaderNames:
-  - KT/Blend Unlit
+  - KT/Mobile/DiffuseTint
 --- !u!212 &212233205769434694
 SpriteRenderer:
   m_ObjectHideFlags: 1

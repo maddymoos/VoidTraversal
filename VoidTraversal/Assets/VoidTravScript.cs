@@ -422,12 +422,13 @@ public class VoidTravScript : MonoBehaviour
 
     IEnumerator EnterTheVoid()
     {
+        Ready = false;
         Debug.LogFormat("[Void Traversal #{0}]: You land in The Void at {1}. You're facing {2}.", moduleId, Map[CurrRow][CurrCol], compNames[CurrRot]);
         if(Map[CurrRow][CurrCol] == GoalLocation)
         {
             Debug.LogFormat("[Void Traversal #{0}]: And, unfortunately for you, that's exactly where I am, and you'd never know.", moduleId);
         }
-        Ready = false;
+        
         float i = 0;
         //lerp 0 hide locator
         while (i < 1)
@@ -635,6 +636,77 @@ public class VoidTravScript : MonoBehaviour
         if(!Solved)
         {
             InitModule();
+        }
+    }
+#pragma warning disable 414
+    private readonly string TwitchHelpMessage = @"!{0} select (selects the module) !{0} urld (move up/right/left/backwards) !{0} enter (enter the void) !{0} submit (submit the current location)";
+#pragma warning restore 414
+    IEnumerator ProcessTwitchCommand(string command)
+    {
+        Match m;
+        if ((m = Regex.Match(command, @"^\s*((select)|(submit)|(enter)|([urld]+))$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)).Success)
+        {
+            yield return null;
+            var input = m.Groups[1].Value.ToLower();
+            string s = "urdl";
+            switch(input)
+            {
+                case "select":
+                    ModSelectable.OnFocus();
+                    yield return new WaitForSeconds(.5f);
+                    ModSelectable.OnDefocus();
+                    break;
+                case "submit":
+                    if (!Started)
+                    {
+                        yield return "sendtochaterror Silly player... you can't knock on my door! You aren't even in The Void!";
+                        break;
+                    }
+                    if (!Ready)
+                    {
+                        yield return "sendtochaterror Slow down! You're in too much of a rush.";
+                        break;
+                    }
+                    else
+                    {
+                        LocationButton.OnInteract();
+                    }
+                    break;
+                case "enter":
+                    if (Started)
+                    {
+                        yield return "sendtochaterror Silly player... you can't enter The Void! You're already here!";
+                        break;
+                    }
+                    if (!Ready)
+                    {
+                        yield return "sendtochaterror Slow down! You're in too much of a rush.";
+                        break;
+                    }
+                    else
+                    {
+                        LocationButton.OnInteract();
+                    }
+                        break;
+                default:
+                    if (!Ready || !Started)
+                    {
+                        yield return "sendtochaterror Slow down! You're in too much of a rush.";
+                        break;
+                    }
+                    for(int i = 0; i < input.Length; i++)
+                    {
+
+                        DirectionButtons[Array.IndexOf(s.ToArray(), input[i])].OnInteract();
+                        yield return new WaitForSeconds(1.25f);
+                    }
+                    break;
+            }
+        }
+        else
+        {
+            yield return "sendtochaterror Unknown command. Use either select, submit, enter, or u/r/l/d.";
+            yield break;
         }
     }
 
