@@ -10,6 +10,8 @@ using UnityEngine;
 using Rnd = UnityEngine.Random;
 using wawa.DDL;
 using UnityEngine.XR.WSA;
+using JetBrains.Annotations;
+using System.Net.Configuration;
 
 public class VoidTravScript : MonoBehaviour
 {
@@ -21,6 +23,8 @@ public class VoidTravScript : MonoBehaviour
     public KMSelectable ModSelectable;
     public KMSelectable LocationButton;
     public KMSelectable[] DirectionButtons;
+
+    public GameObject StatusLightObj;
 
     public AudioSource ambience;
 
@@ -42,8 +46,6 @@ public class VoidTravScript : MonoBehaviour
 
     private float ambVol = 0;
 
-    private Quaternion CameraRotation;
-
     public Color[] Colors;
 
     static int moduleIdCounter = 1;
@@ -52,7 +54,9 @@ public class VoidTravScript : MonoBehaviour
     private static int[] Xdir = { 0, 1, 1, 1, 0, -1, -1, -1 };
     private static int[] Ydir = { -1, -1, 0, 1, 1, 1, 0, -1 };
 
-    private bool Selected = false, Opening = false, PortalClosed = false, PortalOpen = false, Started = false, Ready = false, Focused = false, Struck = false, Solved = false;
+    public bool Started, Ready;
+
+    private bool Selected = false, Opening = false, PortalClosed = false, PortalOpen = false, Focused = false, Struck = false, Solved = false, OpeningPortal = false, EnteringVoid = false;
     private string GoalLocation;
     private int GoalCol, GoalRow, CurrCol, CurrRow, CurrRot, MoveCount, AmbientTimer = 300;
     private float a = .05f, v, r;
@@ -71,6 +75,12 @@ public class VoidTravScript : MonoBehaviour
     private static string colors = "KRGYBMCW";
     private static string[] ColorNames = { "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white" };
 
+    private Vector3[] BackgroundScales = new Vector3[2]
+    {
+        new Vector3(1, 1, 1),
+        new Vector3(0.2f, 0.05f, 0.2f)
+    };
+
     void Awake()
     {
         float scalar = transform.lossyScale.x;
@@ -82,8 +92,9 @@ public class VoidTravScript : MonoBehaviour
         moduleId = moduleIdCounter++;
         ModSelectable.OnFocus += delegate ()
         {
-            if (!Selected)
+            if (!Selected && !OpeningPortal)
             {
+                OpeningPortal = true;
                 StartCoroutine(OpenPortal());
             }
             Focused = true;
@@ -96,20 +107,23 @@ public class VoidTravScript : MonoBehaviour
         {
             if (Started && Ready && !Solved)
             {
+                Ready = false;
                 SubmitCoord();
             }
-            else if(Ready && !Solved)
+            else if (Ready && !Solved)
             {
+                EnteringVoid = true;
+                Ready = false;
                 StartCoroutine(EnterTheVoid());
             }
             return false;
         };
-        for (byte i = 0; i < 4;i++)
+        for (byte i = 0; i < 4; i++)
         {
             byte j = i;
-            DirectionButtons[j].OnInteract += delegate()
+            DirectionButtons[j].OnInteract += delegate ()
             {
-                if(Started && Ready && !Solved)
+                if (Started && Ready && !Solved)
                 {
                     PlayerMove(j);
                 }
@@ -133,6 +147,8 @@ public class VoidTravScript : MonoBehaviour
 
     void InitModule()
     {
+        Backgrounds[0].transform.localScale = BackgroundScales[0];
+        Backgrounds[1].transform.localScale = new Vector3(0, 0, 0);
         ambVol = 0;
         bgOffset = Rnd.Range(0f, 1f);
         Selected = false;
@@ -161,7 +177,7 @@ public class VoidTravScript : MonoBehaviour
 
     void SubmitCoord()
     {
-        if (GoalLocation == Map[CurrRow][CurrCol] || Application.isEditor)
+        if (GoalLocation == Map[CurrRow][CurrCol])
         {
             if (!Struck)
             {
@@ -196,14 +212,14 @@ public class VoidTravScript : MonoBehaviour
         int x = CurrCol;
         int y = CurrRow;
         int Dir = CurrRot;
-        string stuff = "";
         int sum = 0;
         for (int a = 0; a < MoveCount; a++)
         {
             x = (x + Xdir[Dir]);
             y = (y + Ydir[Dir]);
             if (x == 8 || y == 8 || x == -1 || y == -1)
-            {   if(x == y || (x == 8 && y == -1) || (x == -1 &&  y == -8))
+            {
+                if (x == y || (x == 8 && y == -1) || (x == -1 && y == -8))
                 {
                     if (x == -1) x = 0;
                     if (y == -1) y = 0;
@@ -237,8 +253,8 @@ public class VoidTravScript : MonoBehaviour
                 Debug.LogFormat("[Void Traversal #{0}]: You step onto {1}, before The Void spins you, making you face {2}!", moduleId, Map[y][x], compNames[Dir]);
             }
         }
-        if(FixMyFormattingPlease(str) != "")
-        Debug.LogFormat("[Void Traversal #{0}]: The Void whisks you past {1}.", moduleId, FixMyFormattingPlease(str));
+        if (FixMyFormattingPlease(str) != "")
+            Debug.LogFormat("[Void Traversal #{0}]: The Void whisks you past {1}.", moduleId, FixMyFormattingPlease(str));
 
         CurrCol = x;
         CurrRow = y;
@@ -250,14 +266,14 @@ public class VoidTravScript : MonoBehaviour
     string FixMyFormattingPlease(string[] str)
     {
         string fix = "";
-        if(str.Length == 2)
+        if (str.Length == 2)
         {
             return str[1];
         }
-        for(int i=1;i < str.Length;i++)
+        for (int i = 1; i < str.Length; i++)
         {
             fix += str[i];
-            if(i<str.Length-2)
+            if (i < str.Length - 2)
             {
                 fix += ", ";
             }
@@ -274,12 +290,12 @@ public class VoidTravScript : MonoBehaviour
     void FixedUpdate()
     {
         bgOffset -= .0001f;
-        if(PortalOpen)
+        if (PortalOpen)
         {
-            Backgrounds[1].GetComponent<MeshRenderer>().material.mainTextureOffset = new Vector2(bgOffset + .4f,0);
+            Backgrounds[1].GetComponent<MeshRenderer>().material.mainTextureOffset = new Vector2(bgOffset + .4f, 0);
             Portal.GetComponent<MeshRenderer>().material.mainTextureOffset = new Vector2(bgOffset, 0);
         }
-        if(Started && Focused)
+        if (Started && Focused)
         {
             AmbientTimer--;
             if (AmbientTimer == 0)
@@ -289,7 +305,7 @@ public class VoidTravScript : MonoBehaviour
             }
 
         }
-        if(!Focused || !Started)
+        if (!Focused || !Started)
         {
             ambVol -= .1f;
             if (ambVol < 0)
@@ -312,8 +328,8 @@ public class VoidTravScript : MonoBehaviour
         {
             if (!PortalClosed)
             {
-                if(Application.isEditor)
-                     Rotator.transform.rotation = new Quaternion(0,0,0,1);
+                if (Application.isEditor)
+                    Rotator.transform.rotation = new Quaternion(0, 0, 0, 1);
                 else
                     Rotator.transform.rotation = new Quaternion(-0.6f, 0.0f, 0.0f, 0.8f);
             }
@@ -327,11 +343,11 @@ public class VoidTravScript : MonoBehaviour
                 a = -a;
             }
             v += a / 5;
-            if(v > 1f)
+            if (v > 1f)
             {
                 v = 1f;
             }
-            if(v < -1f)
+            if (v < -1f)
             {
                 v = -1f;
             }
@@ -344,8 +360,7 @@ public class VoidTravScript : MonoBehaviour
     {
         Selected = true;
         yield return new WaitForSeconds(.15f);
-        CameraRotation = Rotator.transform.rotation;
-        
+
         yield return new WaitForSeconds(.5f);
         Audio.PlaySoundAtTransform("PortalOpen", Portal.transform);
         Audio.PlaySoundAtTransform("VoidAmbi", Portal.transform);
@@ -353,19 +368,19 @@ public class VoidTravScript : MonoBehaviour
         Portal.SetActive(true);
         Opening = true;
         PortalClosed = false;
-        
+
         //LERP 1 - PORTAL OPEN
         while (i < 1)
         {
             PortalLayers[4].localScale = Vector3.Lerp(new Vector3(0f, .001f, .125f), new Vector3(.125f, .001f, .125f), i * i);
-            Portal.GetComponent<MeshRenderer>().material.mainTextureScale = new Vector2(-(i * i) /2.5f, -1);
+            Portal.GetComponent<MeshRenderer>().material.mainTextureScale = new Vector2(-(i * i) / 2.5f, -1);
             Portal.GetComponent<MeshRenderer>().material.mainTextureOffset = new Vector2((-1 + i * i) / 5f + bgOffset, 0);
             PortalLight.intensity = i;
             yield return null;
             i += Time.deltaTime;
         }
         PortalOpen = true;
-        Portal.GetComponent<MeshRenderer>().material.mainTextureScale = new Vector2(-1/2.5f, -1);
+        Portal.GetComponent<MeshRenderer>().material.mainTextureScale = new Vector2(-1 / 2.5f, -1);
         Portal.GetComponent<MeshRenderer>().material.mainTextureOffset = new Vector2(bgOffset, 0);
         PortalLayers[4].localScale = new Vector3(.125f, .001f, .125f);
         Opening = false;
@@ -393,7 +408,7 @@ public class VoidTravScript : MonoBehaviour
         while (i < 1)
         {
             PortalLayers[4].localScale = Vector3.Lerp(new Vector3(.125f, .001f, .125f), new Vector3(0f, .001f, .125f), i * i);
-            Portal.GetComponent<MeshRenderer>().material.mainTextureScale = new Vector2((-1 + (i * i)) /2.5f, -1);
+            Portal.GetComponent<MeshRenderer>().material.mainTextureScale = new Vector2((-1 + (i * i)) / 2.5f, -1);
             Portal.GetComponent<MeshRenderer>().material.mainTextureOffset = new Vector2(-(i * i) / 5f + bgOffset, 0);
             PortalLight.intensity = 1 - i;
             yield return null;
@@ -418,17 +433,20 @@ public class VoidTravScript : MonoBehaviour
             i += Time.deltaTime / 2;
         }
         Ready = true;
+        OpeningPortal = false;
     }
 
     IEnumerator EnterTheVoid()
     {
+        EnteringVoid = true;
         Ready = false;
+        StartCoroutine(ScaleStatusLight(true));
         Debug.LogFormat("[Void Traversal #{0}]: You land in The Void at {1}. You're facing {2}.", moduleId, Map[CurrRow][CurrCol], compNames[CurrRot]);
-        if(Map[CurrRow][CurrCol] == GoalLocation)
+        if (Map[CurrRow][CurrCol] == GoalLocation)
         {
             Debug.LogFormat("[Void Traversal #{0}]: And, unfortunately for you, that's exactly where I am, and you'd never know.", moduleId);
         }
-        
+
         float i = 0;
         //lerp 0 hide locator
         while (i < 1)
@@ -447,19 +465,19 @@ public class VoidTravScript : MonoBehaviour
         while (i < 1)
         {
             PortalLayers[4].localScale = Vector3.Lerp(new Vector3(0f, .001f, 0f), new Vector3(.25f, .001f, .25f), i * i);
-            Portal.GetComponent<MeshRenderer>().material.mainTextureScale = new Vector2(-(i * i) /2.5f, -(i * i));
+            Portal.GetComponent<MeshRenderer>().material.mainTextureScale = new Vector2(-(i * i) / 2.5f, -(i * i));
             Portal.GetComponent<MeshRenderer>().material.mainTextureOffset = new Vector2((-1 + i * i) / 5f + bgOffset, (-1 + i * i) / 2f);
-            PortalLight.intensity = 5*i;
+            PortalLight.intensity = 5 * i;
             yield return null;
             i += Time.deltaTime * 2;
         }
         PortalOpen = true;
-        Portal.GetComponent<MeshRenderer>().material.mainTextureScale = new Vector2(-1 /2.5f, -1);
+        Portal.GetComponent<MeshRenderer>().material.mainTextureScale = new Vector2(-1 / 2.5f, -1);
         Portal.GetComponent<MeshRenderer>().material.mainTextureOffset = new Vector2(bgOffset, 0);
         PortalLayers[4].localScale = new Vector3(.25f, .001f, .25f);
 
-        Backgrounds[0].SetActive(false);
-        Backgrounds[1].SetActive(true);
+        Backgrounds[0].transform.localScale = new Vector3(0, 0, 0);
+        Backgrounds[1].transform.localScale = BackgroundScales[1];
         yield return new WaitForSeconds(.75f);
         i = 0;
         Started = true;
@@ -468,9 +486,9 @@ public class VoidTravScript : MonoBehaviour
         while (i < 1)
         {
             PortalLayers[4].localScale = Vector3.Lerp(new Vector3(.25f, .001f, .25f), new Vector3(0f, .001f, 0f), i * i);
-            Portal.GetComponent<MeshRenderer>().material.mainTextureScale = new Vector2((-1 + (i * i)) /2.5f, -1 + (i * i));
-            Portal.GetComponent<MeshRenderer>().material.mainTextureOffset = new Vector2(-(i * i) / 5f + bgOffset, -(i * i) /2f);
-            PortalLight.intensity = 5 - 5* i;
+            Portal.GetComponent<MeshRenderer>().material.mainTextureScale = new Vector2((-1 + (i * i)) / 2.5f, -1 + (i * i));
+            Portal.GetComponent<MeshRenderer>().material.mainTextureOffset = new Vector2(-(i * i) / 5f + bgOffset, -(i * i) / 2f);
+            PortalLight.intensity = 5 - 5 * i;
             yield return null;
             i += Time.deltaTime * 2;
         }
@@ -482,7 +500,7 @@ public class VoidTravScript : MonoBehaviour
         PortalLayers[4].localScale = new Vector3(0, .001f, 0);
         Opening = false;
         //Intermission Change The Locator To Player Pos NOW
-        if(Rnd.Range(0,2) == 0)
+        if (Rnd.Range(0, 2) == 0)
         {
 
             DisplayColor.color = Colors[Array.IndexOf(colors.ToArray(), Map[CurrRow][CurrCol][0])];
@@ -496,7 +514,7 @@ public class VoidTravScript : MonoBehaviour
             DisplayText.color = Color.white;
         }
 
-            yield return new WaitForSeconds(.5f);
+        yield return new WaitForSeconds(.5f);
         //lerp 3 locator back
         LocationDisplay.SetActive(true);
         i = 0;
@@ -508,7 +526,7 @@ public class VoidTravScript : MonoBehaviour
         }
         LocationDisplay.transform.localScale = new Vector3(.05f, .0001f, .05f);
         Ready = true;
-
+        EnteringVoid = false;
     }
 
     IEnumerator SwitchLocation(bool Num, int thing)
@@ -520,7 +538,7 @@ public class VoidTravScript : MonoBehaviour
         {
             LocationDisplay.transform.localScale = Vector3.Lerp(new Vector3(.05f, .0001f, .05f), Vector3.zero, i * i * i);
             i += Time.deltaTime * 2f;
-            bgOffset -= Time.deltaTime /69f;
+            bgOffset -= Time.deltaTime / 69f;
             yield return null;
         }
         LocationDisplay.SetActive(false);
@@ -604,10 +622,10 @@ public class VoidTravScript : MonoBehaviour
             Portal.GetComponent<MeshRenderer>().material.mainTextureScale = new Vector2(-(i * i), -(i * i));
             Portal.GetComponent<MeshRenderer>().material.mainTextureOffset = new Vector2((-1 + i * i) / 2f, (-1 + i * i) / 2f);
             PortalLight.intensity = i;
-            if(i > .875f)
+            if (i > .875f)
             {
-                Backgrounds[0].SetActive(true);
-                Backgrounds[1].SetActive(false);
+                Backgrounds[0].transform.localScale = BackgroundScales[0];
+                Backgrounds[1].transform.localScale = new Vector3(0, 0, 0);
                 PortalOpen = false;
             }
             yield return null;
@@ -625,19 +643,36 @@ public class VoidTravScript : MonoBehaviour
             PortalLayers[4].localScale = Vector3.Lerp(new Vector3(.25f, .001f, .25f), new Vector3(0f, .001f, 0f), i * i);
             Portal.GetComponent<MeshRenderer>().material.mainTextureScale = new Vector2((-1 + (i * i)), -1 + (i * i));
             Portal.GetComponent<MeshRenderer>().material.mainTextureOffset = new Vector2(-(i * i) / 2f, -(i * i) / 2f);
-            PortalLight.intensity = 1-i;
+            PortalLight.intensity = 1 - i;
             yield return null;
             i += Time.deltaTime;
         }
         PortalOpen = true;
         Portal.SetActive(false);
+        StartCoroutine(ScaleStatusLight(false));
         yield return new WaitForSeconds(.25f);
         Portal.GetComponent<MeshRenderer>().material = PortalMats[0];
-        if(!Solved)
+        if (!Solved)
         {
             InitModule();
         }
     }
+
+    private IEnumerator ScaleStatusLight(bool enteringVoid)
+    {
+        var duration = 0.5f;
+        var elapsed = 0f;
+        var startY = enteringVoid ? 1f : 0.1f;
+        var goalY = enteringVoid ? 0.1f : 1f;
+        while (elapsed < duration)
+        {
+            StatusLightObj.transform.localScale = new Vector3(1f, Mathf.Lerp(startY, goalY, elapsed / duration), 1f);
+            yield return null;
+            elapsed += Time.deltaTime;
+        }
+        StatusLightObj.transform.localScale = new Vector3(1f, goalY, 1f);
+    }
+
 #pragma warning disable 414
     private readonly string TwitchHelpMessage = @"!{0} select (selects the module) !{0} urld (move up/right/left/backwards) !{0} enter (enter the void) !{0} submit (submit the current location)";
 #pragma warning restore 414
@@ -647,9 +682,9 @@ public class VoidTravScript : MonoBehaviour
         if ((m = Regex.Match(command, @"^\s*((select)|(submit)|(enter)|([urld]+))$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)).Success)
         {
             yield return null;
-            var input = m.Groups[1].Value.ToLower();
+            var input = m.Groups[1].Value.ToLowerInvariant();
             string s = "urdl";
-            switch(input)
+            switch (input)
             {
                 case "select":
                     ModSelectable.OnFocus();
@@ -687,14 +722,14 @@ public class VoidTravScript : MonoBehaviour
                     {
                         LocationButton.OnInteract();
                     }
-                        break;
+                    break;
                 default:
                     if (!Ready || !Started)
                     {
                         yield return "sendtochaterror Slow down! You're in too much of a rush.";
                         break;
                     }
-                    for(int i = 0; i < input.Length; i++)
+                    for (int i = 0; i < input.Length; i++)
                     {
 
                         DirectionButtons[Array.IndexOf(s.ToArray(), input[i])].OnInteract();
@@ -710,4 +745,166 @@ public class VoidTravScript : MonoBehaviour
         }
     }
 
+    public class PositionItem
+    {
+        public int XCol;
+        public int YRow;
+        public int StepCount;
+        public int Rotation;
+
+        public PositionItem(int x, int y, int sc, int r)
+        {
+            XCol = x;
+            YRow = y;
+            StepCount = sc;
+            Rotation = r;
+        }
+    }
+
+    public struct QueueItem
+    {
+        public PositionItem Item;
+        public PositionItem Parent;
+        public int Action;
+
+        public QueueItem(PositionItem i, PositionItem p, int r)
+        {
+            Item = i;
+            Parent = p;
+            Action = r;
+        }
+    }
+
+    public struct StateKey
+    {
+        public int X, Y, Rotation, Step;
+
+        public StateKey(int x, int y, int rot, int step)
+        {
+            X = x;
+            Y = y;
+            Rotation = rot;
+            Step = step;
+        }
+    }
+
+    private IEnumerator TwitchHandleForcedSolve()
+    {
+        if (!Selected && !OpeningPortal)
+        {
+            ModSelectable.OnFocus();
+            yield return null;
+            ModSelectable.OnDefocus();
+
+            while (!Ready)
+                yield return true;
+        }
+        if (!Started && !EnteringVoid)
+        {
+            while (!Ready)
+                yield return true;
+
+            LocationButton.OnInteract();
+            yield return null;
+        }
+        while (!Started || !Ready || EnteringVoid)
+            yield return true;
+
+        var currentItem = new PositionItem(CurrCol, CurrRow, MoveCount, CurrRot);
+
+        var visited = new Dictionary<StateKey, QueueItem>();
+        var q = new Queue<QueueItem>();
+
+        q.Enqueue(new QueueItem(currentItem, null, 0));
+        PositionItem found = null;
+        while (q.Count > 0)
+        {
+            var qi = q.Dequeue();
+            var key = new StateKey(qi.Item.XCol, qi.Item.YRow, qi.Item.Rotation, qi.Item.StepCount);
+            if (visited.ContainsKey(key))
+                continue;
+            visited[key] = qi;
+            if (qi.Item.XCol == GoalCol && qi.Item.YRow == GoalRow)
+            {
+                found = qi.Item;
+                break;
+            }
+
+            for (int i = 0; i < 4; i++)
+                q.Enqueue(new QueueItem(GetPositionItem(qi.Item, i), qi.Item, i));
+        }
+        if (found == null)
+        {
+            Debug.LogError("Autosolver failed to find a path.");
+            yield break;
+        }
+        var r = found;
+        var path = new List<int>();
+        while (true)
+        {
+            var key = new StateKey(r.XCol, r.YRow, r.Rotation, r.StepCount);
+            var nr = visited[key];
+            if (nr.Parent == null)
+                break;
+            path.Add(nr.Action);
+            r = nr.Parent;
+        }
+
+        for (int i = path.Count - 1; i >= 0; i--)
+        {
+            DirectionButtons[path[i]].OnInteract();
+            while (!Ready)
+                yield return null;
+        }
+        LocationButton.OnInteract();
+        while (!Solved)
+            yield return true;
+    }
+
+    PositionItem GetPositionItem(PositionItem item, int Direction)
+    {
+        PositionItem newItem = new PositionItem(item.XCol, item.YRow, item.StepCount, item.Rotation);
+
+        newItem.Rotation += Direction * 2;
+        newItem.Rotation %= 8;
+
+        newItem.StepCount++;
+
+        int x = newItem.XCol;
+        int y = newItem.YRow;
+        int dir = newItem.Rotation;
+
+        for (int a = 0; a < newItem.StepCount; a++)
+        {
+            x = (x + Xdir[dir]);
+            y = (y + Ydir[dir]);
+            if (x == 8 || y == 8 || x == -1 || y == -1)
+            {
+                if (x == y || (x == 8 && y == -1) || (x == -1 && y == -8))
+                {
+                    if (x == -1) x = 0;
+                    if (y == -1) y = 0;
+                    if (x == 8) x = 7;
+                    if (y == 8) y = 7;
+
+                    dir = (dir + 4) % 8;
+                }
+                if (x == 8 || x == -1) dir = (8 - dir) % 8;
+                if (y == 8 || y == -1) dir = (12 - dir) % 8;
+                if (x == -1) x = 0;
+                if (y == -1) y = 0;
+                if (x == 8) x = 7;
+                if (y == 8) y = 7;
+            }
+
+            if (a == 0)
+                dir = (dir + 1) % 8;
+        }
+
+        newItem.XCol = x;
+        newItem.YRow = y;
+        newItem.Rotation = dir;
+
+        return newItem;
+    }
 }

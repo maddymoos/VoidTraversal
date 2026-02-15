@@ -20185,12 +20185,15 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 4f5d0ee97c5d43e479e0b7fbd924510a, type: 3}
   - {fileID: 8300000, guid: 128039a968a109c4f9b617f157fad5ff, type: 3}
   - {fileID: 8300000, guid: 525d2deb9755aef438d21117e688d250, type: 3}
+  - {fileID: 8300000, guid: b25d1313e1b1c4b44b1ae884c1b30519, type: 3}
+  - {fileID: 8300000, guid: 8562e45e11b4ab04f8fa4e5f85bf7129, type: 3}
+  - {fileID: 8300000, guid: e4f12ebec61b47e4f9a1b96a31ecba7b, type: 3}
   StrikeCount: 3
   TimeLimit: 600
   BombSize: 1
   FrontFaceOnly: 1
   EdgeworkConfiguration: {fileID: 0}
-  TwitchPlaysActive: 0
+  TwitchPlaysActive: 1
   TwitchPlaysMode: 0
   turnSpeed: 128
   panSpeed: 4
