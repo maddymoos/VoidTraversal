@@ -174,7 +174,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!1 &1393361465821468
 GameObject:
   m_ObjectHideFlags: 1
@@ -721,7 +721,7 @@ Transform:
   m_GameObject: {fileID: 1965797657541926}
   m_LocalRotation: {x: -0, y: -1, z: -0, w: 0}
   m_LocalPosition: {x: -0.075167, y: 0.01986, z: -0.076057}
-  m_LocalScale: {x: 1, y: 0.1, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 4203187594696522}
   m_RootOrder: 0
@@ -1702,6 +1702,7 @@ MonoBehaviour:
   - {fileID: 114477260609778480}
   - {fileID: 114987056485144624}
   - {fileID: 114793060482553410}
+  StatusLightObj: {fileID: 1965797657541926}
   ambience: {fileID: 82835299523319040}
   DisplayColor: {fileID: 102056039284496448}
   DisplayText: {fileID: 102701875629092554}
@@ -1730,6 +1731,8 @@ MonoBehaviour:
   - {r: 0.87018263, g: 0.24264705, b: 0.9705882, a: 1}
   - {r: 0.35423875, g: 0.9264706, b: 0.9027919, a: 1}
   - {r: 0.9264706, g: 0.9264706, b: 0.9264706, a: 1}
+  Started: 0
+  Ready: 0
 --- !u!114 &114146777033741122
 MonoBehaviour:
   m_ObjectHideFlags: 1
