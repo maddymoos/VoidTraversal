@@ -1,17 +1,10 @@
-﻿using KModkit;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Security;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using Rnd = UnityEngine.Random;
-using wawa.DDL;
-using UnityEngine.XR.WSA;
-using JetBrains.Annotations;
-using System.Net.Configuration;
 
 public class VoidTravScript : MonoBehaviour
 {
@@ -678,71 +671,77 @@ public class VoidTravScript : MonoBehaviour
 #pragma warning restore 414
     IEnumerator ProcessTwitchCommand(string command)
     {
-        Match m;
-        if ((m = Regex.Match(command, @"^\s*((select)|(submit)|(enter)|([urld]+))$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)).Success)
+        var m = Regex.Match(command, @"^\s*select\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if (m.Success)
         {
             yield return null;
-            var input = m.Groups[1].Value.ToLowerInvariant();
-            string s = "urdl";
-            switch (input)
-            {
-                case "select":
-                    ModSelectable.OnFocus();
-                    yield return new WaitForSeconds(.5f);
-                    ModSelectable.OnDefocus();
-                    break;
-                case "submit":
-                    if (!Started)
-                    {
-                        yield return "sendtochaterror Silly player... you can't knock on my door! You aren't even in The Void!";
-                        break;
-                    }
-                    if (!Ready)
-                    {
-                        yield return "sendtochaterror Slow down! You're in too much of a rush.";
-                        break;
-                    }
-                    else
-                    {
-                        LocationButton.OnInteract();
-                    }
-                    break;
-                case "enter":
-                    if (Started)
-                    {
-                        yield return "sendtochaterror Silly player... you can't enter The Void! You're already here!";
-                        break;
-                    }
-                    if (!Ready)
-                    {
-                        yield return "sendtochaterror Slow down! You're in too much of a rush.";
-                        break;
-                    }
-                    else
-                    {
-                        LocationButton.OnInteract();
-                    }
-                    break;
-                default:
-                    if (!Ready || !Started)
-                    {
-                        yield return "sendtochaterror Slow down! You're in too much of a rush.";
-                        break;
-                    }
-                    for (int i = 0; i < input.Length; i++)
-                    {
-
-                        DirectionButtons[Array.IndexOf(s.ToArray(), input[i])].OnInteract();
-                        yield return new WaitForSeconds(1.25f);
-                    }
-                    break;
-            }
-        }
-        else
-        {
-            yield return "sendtochaterror Unknown command. Use either select, submit, enter, or u/r/l/d.";
+            ModSelectable.OnFocus();
+            yield return new WaitForSeconds(0.5f);
             yield break;
         }
+        m = Regex.Match(command, @"^\s*submit\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if (m.Success)
+        {
+            if (!Started)
+            {
+                yield return "sendtochaterror Silly player... you can't knock on my door! You aren't even in The Void!";
+                yield break;
+            }
+            if (!Ready)
+            {
+                yield return "sendtochaterror Slow down! You're in too much of a rush.";
+                yield break;
+            }
+            yield return null;
+            yield return "solve";
+            yield return "strike";
+            LocationButton.OnInteract();
+            yield break;
+        }
+        m = Regex.Match(command, @"^\s*enter\s*", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if (m.Success)
+        {
+            if (Started)
+            {
+                yield return "sendtochaterror Silly player... you can't enter The Void! You're already here!";
+                yield break;
+            }
+            if (!Ready)
+            {
+                yield return "sendtochaterror Slow down! You're in too much of a rush.";
+                yield break;
+            }
+            yield return null;
+            yield return "solve";
+            yield return "strike";
+            LocationButton.OnInteract();
+            yield break;
+        }
+        m = Regex.Match(command, @"^\s*(?<moves>[urdl;, ]+)\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if (m.Success)
+        {
+            string str = "urdl,; ";
+            var list = new List<int>();
+            foreach (var s in m.Groups["moves"].Value)
+            {
+                int ix = str.IndexOf(s);
+                if (ix == -1)
+                    yield break;
+                if (ix > 3)
+                    continue;
+                list.Add(ix);
+            }
+            yield return null;
+            yield return "solve";
+            yield return "strike";
+            for (int i = 0; i < list.Count; i++)
+            {
+                DirectionButtons[list[i]].OnInteract();
+                yield return new WaitForSeconds(1.25f);
+            }
+        }
+        yield return "sendtochaterror Unknown command. Use either select, submit, enter, or u/r/l/d.";
+        yield break;
     }
 
     public class PositionItem
